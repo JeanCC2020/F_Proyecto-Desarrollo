@@ -43,7 +43,7 @@ const Home = () => {
               Registrar Incidencia <ArrowRight size={18} />
             </Link>
             <Link to="/bandeja" className="btn btn-secondary">
-              Bandeja Jefe de Soporte
+              Bandeja Jefatura de Soporte
             </Link>
           </div>
         </div>
