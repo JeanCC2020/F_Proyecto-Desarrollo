@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Monitor, User, Clock, CheckCircle, Wrench, Package, History, Send, ClipboardList } from 'lucide-react';
 import StatusBadge from '../components/StatusBadge';
+import { api } from '../lib/api';
 
 const DetalleIncidencia = () => {
   const { id } = useParams();
@@ -16,16 +17,14 @@ const DetalleIncidencia = () => {
   const [informe, setInforme] = useState('');
   const [repuesto, setRepuesto] = useState('');
 
-  // Simulación de roles (En semana 6 será real)
-  const isJefe = true; 
-  const isTecnico = localStorage.getItem('currentUser') !== null;
+  // Obtener roles reales (S042)
+  const userJson = localStorage.getItem('currentUser');
+  const currentUser = userJson ? JSON.parse(userJson) : null;
+  const isJefe = currentUser?.rol === 'jefe';
+  const isTecnico = currentUser?.rol === 'tecnico';
 
   const fetchData = () => {
-    fetch(`http://localhost:3000/api/incidencias/${id}`)
-      .then(res => {
-        if (!res.ok) throw new Error('Incidencia no encontrada');
-        return res.json();
-      })
+    api.get(`/incidencias/${id}`)
       .then(data => {
         setIncidencia(data);
         setLoading(false);
@@ -37,37 +36,33 @@ const DetalleIncidencia = () => {
   };
 
   const fetchTecnicos = () => {
-    fetch('http://localhost:3000/api/tecnicos')
-      .then(res => res.json())
+    api.get('/tecnicos')
       .then(data => setTecnicos(data))
       .catch(err => console.error("Error cargando técnicos:", err));
   };
 
   useEffect(() => {
     fetchData();
-    fetchTecnicos();
-  }, [id]);
+    if (isJefe) {
+      fetchTecnicos();
+    }
+  }, [id, isJefe]);
 
   const handleAction = (payload) => {
     setUpdating(true);
-    fetch(`http://localhost:3000/api/incidencias/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-    .then(res => res.json())
-    .then(data => {
-      setIncidencia(data);
-      setUpdating(false);
-      // Limpiar campos
-      setTecnicoId('');
-      setInforme('');
-      setRepuesto('');
-    })
-    .catch(err => {
-      alert("Error al actualizar: " + err.message);
-      setUpdating(false);
-    });
+    api.patch(`/incidencias/${id}`, payload)
+      .then(data => {
+        setIncidencia(data);
+        setUpdating(false);
+        // Limpiar campos
+        setTecnicoId('');
+        setInforme('');
+        setRepuesto('');
+      })
+      .catch(err => {
+        alert("Error al actualizar: " + err.message);
+        setUpdating(false);
+      });
   };
 
   if (loading) return <div className="container-center mt-4">Cargando detalles...</div>;
@@ -75,8 +70,8 @@ const DetalleIncidencia = () => {
 
   return (
     <div className="container-center animate-fade-in">
-      <Link to="/bandeja" className="btn btn-secondary mb-6">
-        <ArrowLeft size={18} /> Volver a la Bandeja
+      <Link to={isJefe ? "/bandeja" : "/mis-tareas"} className="btn btn-secondary mb-6">
+        <ArrowLeft size={18} /> Volver a {isJefe ? "la Bandeja" : "Mis Tareas"}
       </Link>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: 'var(--space-6)' }}>
@@ -139,7 +134,9 @@ const DetalleIncidencia = () => {
             </section>
           )}
 
-          {isTecnico && (incidencia.estado === 'Asignada' || incidencia.estado === 'En espera de repuesto') && (
+          {isTecnico && 
+           (incidencia.estado === 'Asignada' || incidencia.estado === 'En espera de repuesto') && 
+           incidencia.tecnicoAsignado === currentUser?.nombre && (
             <section className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
               
               <div className="inner-panel">

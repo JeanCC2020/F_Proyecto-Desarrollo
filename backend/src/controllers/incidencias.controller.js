@@ -1,43 +1,52 @@
 const incidenciasService = require('../services/incidencias.service');
 
-const listarIncidencias = async (req, res) => {
+const listarIncidencias = async (req, res, next) => {
   try {
     const incidencias = await incidenciasService.listarIncidencias();
     res.json(incidencias);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
-const obtenerIncidenciaPorId = async (req, res) => {
+const obtenerIncidenciaPorId = async (req, res, next) => {
   try {
     const incidencia = await incidenciasService.obtenerIncidenciaPorId(req.params.id);
     res.json(incidencia);
   } catch (error) {
-    res.status(error.statusCode || 500).json({ error: error.message });
+    next(error);
   }
 };
 
-
-const registrarIncidencia = async (req, res) => {
+const registrarIncidencia = async (req, res, next) => {
   try {
-    const incidencia = await incidenciasService.registrarIncidencia(req.body);
+    const incidencia = await incidenciasService.registrarIncidencia(req.body, req.user);
     res.status(201).json(incidencia);
   } catch (error) {
-    res.status(error.statusCode || 500).json({ error: error.message });
+    next(error);
   }
 };
 
-const actualizarIncidencia = async (req, res) => {
+const actualizarIncidencia = async (req, res, next) => {
   try {
+    const { tecnicoId } = req.body;
+
+    // Control de acceso para asignación de técnico (S048 / S042)
+    if (tecnicoId && (!req.user || req.user.rol !== 'jefe')) {
+      const error = new Error('Acceso denegado: Solo la jefatura de soporte puede asignar técnicos.');
+      error.statusCode = 403;
+      throw error;
+    }
+
     const incidencia = await incidenciasService.actualizarIncidencia(
       req.params.id,
-      req.body
+      req.body,
+      req.user
     );
 
     res.json(incidencia);
   } catch (error) {
-    res.status(error.statusCode || 500).json({ error: error.message });
+    next(error);
   }
 };
 

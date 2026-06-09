@@ -2,20 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
 import StatusBadge from '../components/StatusBadge';
+import { api } from '../lib/api';
 
 const MisTareas = () => {
   const [incidencias, setIncidencias] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Simulando el usuario logueado desde LocalStorage
-  const currentUser = localStorage.getItem('currentUser') || 'Carlos Tecnico';
+  const userJson = localStorage.getItem('currentUser');
+  const currentUser = userJson ? JSON.parse(userJson) : null;
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/incidencias')
-      .then(res => res.json())
+    api.get('/incidencias')
       .then(data => {
-        // Filtrar solo las asignadas al técnico actual
-        const tareasAssignadas = data.filter(inc => inc.tecnicoAsignado === currentUser);
+        const nameToMatch = currentUser ? currentUser.nombre : '';
+        const tareasAssignadas = Array.isArray(data) 
+          ? data.filter(inc => inc.tecnicoAsignado === nameToMatch)
+          : [];
         setIncidencias(tareasAssignadas);
         setLoading(false);
       })
@@ -29,7 +31,7 @@ const MisTareas = () => {
     <div className="animate-fade-in delay-300">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h2 className="heading-lg" style={{ margin: 0 }}>Mis Tareas Asignadas</h2>
-        <span style={{ color: 'var(--text-secondary)' }}>Técnico: <strong>{currentUser}</strong></span>
+        <span style={{ color: 'var(--text-secondary)' }}>Técnico: <strong>{currentUser ? currentUser.nombre : ''}</strong></span>
       </div>
 
       <div className="glass-panel table-container">

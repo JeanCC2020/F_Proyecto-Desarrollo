@@ -46,7 +46,7 @@ const obtenerIncidenciaPorId = async (id) => {
   return mapIncidencia(data);
 };
 
-const registrarIncidencia = async (payload) => {
+const registrarIncidencia = async (payload, usuario) => {
   const { codigoEquipo, problema, usuarioResponsable, registradoPor } = payload;
 
   const { data: equipo } = await incidenciasRepository.findEquipoByCodigo(codigoEquipo);
@@ -74,15 +74,16 @@ const registrarIncidencia = async (payload) => {
     throw error;
   }
 
+  const creador = usuario ? usuario.nombre : registradoPor || 'Sistema';
   await incidenciasRepository.createHistorialEvento({
     incidencia_id: newId,
-    evento: 'Incidencia registrada',
+    evento: `Incidencia registrada por ${creador}`,
   });
 
   return mapIncidencia(data);
 };
 
-const actualizarIncidencia = async (id, payload) => {
+const actualizarIncidencia = async (id, payload, usuario) => {
   const { tecnicoId, nuevoEstado, informe, repuesto } = payload;
 
   const { data: incActual } = await incidenciasRepository.findBaseById(id);
@@ -93,6 +94,7 @@ const actualizarIncidencia = async (id, payload) => {
     throw error;
   }
 
+  const usuarioInfo = usuario ? usuario.nombre : 'Sistema';
   const updateFields = {};
   const logs = [];
 
@@ -132,7 +134,7 @@ const actualizarIncidencia = async (id, payload) => {
 
     logs.push({
       incidencia_id: id,
-      evento: `Asignada a ${tec.nombre}`,
+      evento: `Asignada a ${tec.nombre} por ${usuarioInfo}`,
     });
   }
 
@@ -141,7 +143,7 @@ const actualizarIncidencia = async (id, payload) => {
 
     logs.push({
       incidencia_id: id,
-      evento: `Estado cambiado a ${nuevoEstado}`,
+      evento: `Estado cambiado a ${nuevoEstado} por ${usuarioInfo}`,
     });
 
     if (
@@ -164,7 +166,7 @@ const actualizarIncidencia = async (id, payload) => {
 
     logs.push({
       incidencia_id: id,
-      evento: 'Informe técnico registrado',
+      evento: `Informe técnico registrado por ${usuarioInfo}`,
     });
   }
 
@@ -174,7 +176,7 @@ const actualizarIncidencia = async (id, payload) => {
 
     logs.push({
       incidencia_id: id,
-      evento: `Repuesto solicitado: ${repuesto}`,
+      evento: `Repuesto solicitado: ${repuesto} por ${usuarioInfo}`,
     });
   }
 
