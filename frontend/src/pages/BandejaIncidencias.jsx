@@ -2,16 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Clock, ClipboardList } from 'lucide-react';
 import StatusBadge from '../components/StatusBadge';
+import { api } from '../lib/api';
 
 const BandejaIncidencias = () => {
   const [incidencias, setIncidencias] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/incidencias')
-      .then(res => res.json())
+    api.get('/incidencias')
       .then(data => {
-        setIncidencias(data);
+        setIncidencias(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch(err => {

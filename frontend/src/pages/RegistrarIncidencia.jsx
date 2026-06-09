@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, AlertCircle } from 'lucide-react';
+import { api } from '../lib/api';
 
 const RegistrarIncidencia = () => {
   const navigate = useNavigate();
+  const userJson = localStorage.getItem('currentUser');
+  const currentUser = userJson ? JSON.parse(userJson) : null;
+
   const [formData, setFormData] = useState({
     codigoEquipo: '',
     problema: '',
     usuarioResponsable: '',
-    registradoPor: ''
+    registradoPor: currentUser ? currentUser.nombre : ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -22,16 +26,12 @@ const RegistrarIncidencia = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:3000/api/incidencias', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al registrar incidencia');
+      await api.post('/incidencias', formData);
+      if (currentUser?.rol === 'jefe') {
+        navigate('/bandeja');
+      } else {
+        navigate('/mis-tareas');
       }
-      navigate('/bandeja');
     } catch (err) {
       setError(err.message);
     } finally {

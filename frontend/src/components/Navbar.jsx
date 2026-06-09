@@ -1,23 +1,30 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { MonitorPlay, ClipboardList, PlusCircle, UserCheck } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { MonitorPlay, ClipboardList, PlusCircle, UserCheck, LogOut } from 'lucide-react';
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const navItems = [
-    { name: 'Inicio', path: '/', icon: <MonitorPlay size={18} /> },
-    { name: 'Nueva Incidencia', path: '/nueva-incidencia', icon: <PlusCircle size={18} /> },
-    { name: 'Bandeja', path: '/bandeja', icon: <ClipboardList size={18} /> },
-    { name: 'Mis Tareas', path: '/mis-tareas', icon: <UserCheck size={18} /> },
-  ];
+  const userJson = localStorage.getItem('currentUser');
+  const currentUser = userJson ? JSON.parse(userJson) : null;
 
-  const currentUser = localStorage.getItem('currentUser') || 'Carlos Tecnico';
-
-  const handleUserChange = (e) => {
-    localStorage.setItem('currentUser', e.target.value);
-    window.location.reload(); 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('currentUser');
+    navigate('/login');
+    window.location.reload();
   };
+
+  if (!currentUser) return null;
+
+  // Filtrar opciones por rol (S042)
+  const navItems = [
+    { name: 'Inicio', path: '/', icon: <MonitorPlay size={18} />, roles: ['jefe', 'tecnico'] },
+    { name: 'Nueva Incidencia', path: '/nueva-incidencia', icon: <PlusCircle size={18} />, roles: ['jefe', 'tecnico'] },
+    { name: 'Bandeja', path: '/bandeja', icon: <ClipboardList size={18} />, roles: ['jefe'] },
+    { name: 'Mis Tareas', path: '/mis-tareas', icon: <UserCheck size={18} />, roles: ['tecnico'] },
+  ].filter(item => item.roles.includes(currentUser.rol));
 
   return (
     <nav className="navbar">
@@ -37,17 +44,17 @@ const Navbar = () => {
           </Link>
         ))}
         
-        <div style={{ marginLeft: '1rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem' }}>
-          <select 
-            className="form-control" 
-            style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', width: 'auto' }}
-            value={currentUser}
-            onChange={handleUserChange}
+        <div style={{ marginLeft: '1rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            👤 <strong>{currentUser.nombre}</strong> ({currentUser.rol === 'jefe' ? 'Jefe' : 'Técnico'})
+          </span>
+          <button 
+            className="btn btn-secondary" 
+            style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem', height: 'auto' }}
+            onClick={handleLogout}
           >
-            <option value="Carlos Tecnico">👤 Carlos</option>
-            <option value="Ana Especialista">👤 Ana</option>
-            <option value="Roberto Redes">👤 Roberto</option>
-          </select>
+            <LogOut size={14} /> Salir
+          </button>
         </div>
       </div>
     </nav>
